@@ -11,6 +11,7 @@ const _config = {
 		delay: 'Maybe later...',
 		accept: 'Sure!'
 	},
+	order: ['decline', 'delay', 'accept'],
 	timingFunction: function(currentCount) {
 		return currentCount > 1 && (Math.log(currentCount) / Math.log(3)).toFixed(4) % 1 == 0;
 	}
@@ -67,19 +68,21 @@ export default class RatingRequestor {
 			'http://itunes.apple.com/WebObjects/MZStore.woa/wa/viewContentsUserReviews?id=' + _config.appStoreId + '&pageNumber=0&sortOrdering=2&type=Purple+Software&mt=8' :
 			'market://details?id=' + _config.appStoreId;
 
+		const options = {
+			decline: { text: _config.actionLabels.decline, onPress: () => { RatingsData.recordDecline(); callback(true, 'decline'); } },
+			delay: 	 { text: _config.actionLabels.delay, onPress: () => { callback(true, 'delay'); } },
+			accept:  { text: _config.actionLabels.accept, onPress: () => {
+				RatingsData.recordRated();
+				callback(true, 'accept');
+				Linking.openURL(storeUrl);
+			}, style: 'cancel' },
+		}
+
 		Alert.alert(
-			_config.title, 
-			_config.message, 
-			[
-				{ text: _config.actionLabels.decline, onPress: () => { RatingsData.recordDecline(); callback(true, 'decline'); } },
-				{ text: _config.actionLabels.delay, onPress: () => { callback(true, 'delay'); } },
-				{ text: _config.actionLabels.accept, onPress: () => { 
-					RatingsData.recordRated(); 
-					callback(true, 'accept');
-					Linking.openURL(storeUrl);
-				}, style: 'cancel' }
-			]
-		);	
+			_config.title,
+			_config.message,
+			_config.order.map(option => options[option.toLowerCase()]),
+		);
 	}
 
 	/**
